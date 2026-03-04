@@ -44,4 +44,10 @@ public class ConcurrentValueService {
 				balance.valueName(), String.valueOf(balance.amount()));
 	}
 
+	@Transactional(readOnly = true)
+	public ConcurrentValue getConcurrentValue(String name) {
+		return repository.findByName(name)
+				.orElseThrow(() -> new IllegalArgumentException("Concurrent value not found: " + name));
+	}
+
 }
