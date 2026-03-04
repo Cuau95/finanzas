@@ -48,7 +48,7 @@ public class TransactionController {
 
 	@GetMapping("/{id}")
 	public ResponseEntity<TransactionDto> getTransaction(@PathVariable Long id) {
-		LOGGER.info("Request received to get Transaction by this ID: {}", id);
+		LOGGER.info("Request received to get Transaction with this ID: {}", id);
 		return ResponseEntity.ok(mapper.dtoFrom(service.getTransaction(id)));
 	}
 
