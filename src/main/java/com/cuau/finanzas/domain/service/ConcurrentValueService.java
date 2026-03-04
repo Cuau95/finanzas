@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.ConcurrentValue;
 import com.cuau.finanzas.domain.repository.ConcurrentValueRepository;
 import com.cuau.finanzas.domain.rules.pojo.BalanceUpdate;
@@ -20,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 public class ConcurrentValueService {
 
 	private static final Logger LOGGER = getLogger(ConcurrentValueService.class);
+	private static final String CONCURRENT_VALUE_RESOURCE_NAME = "ConcurrentValue";
+	private static final String NAME_FIELD_NAME = "name";
 
 	private final ConcurrentValueRepository repository;
 
@@ -46,8 +49,8 @@ public class ConcurrentValueService {
 
 	@Transactional(readOnly = true)
 	public ConcurrentValue getConcurrentValue(String name) {
-		return repository.findByName(name)
-				.orElseThrow(() -> new IllegalArgumentException("Concurrent value not found: " + name));
+		return repository.findByName(name).orElseThrow(
+				() -> new ResourceNotFoundException(CONCURRENT_VALUE_RESOURCE_NAME, NAME_FIELD_NAME, name));
 	}
 
 }

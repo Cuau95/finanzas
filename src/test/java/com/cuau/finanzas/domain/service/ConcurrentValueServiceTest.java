@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,6 +103,24 @@ public class ConcurrentValueServiceTest {
 
 		assertAll(() -> assertThrows(EntityNotFoundException.class, () -> service.incrementAmount(balance)),
 				() -> verify(repository, times(1)).incrementAmount(eq(NAME), eq(AMOUNT)));
+	}
+
+	@Test
+	void shouldReturnConcurrentValueWhenNameIsValidArgument() {
+		when(repository.findByName(eq(NAME))).thenReturn(Optional.of(value));
+
+		ConcurrentValue valueFetched = assertDoesNotThrow(() -> service.getConcurrentValue(NAME));
+
+		assertAll(() -> assertNotNull(valueFetched), () -> verify(repository).findByName(eq(NAME)));
+	}
+
+	@Test
+	void shouldPropagateExceptionWhenRepositoryThrows() {
+		when(repository.findByName(eq(NAME)))
+				.thenThrow(new IllegalArgumentException("this test had failed by a funny argument"));
+
+		assertAll(() -> assertThrows(IllegalArgumentException.class, () -> service.getConcurrentValue(NAME)),
+				() -> verify(repository).findByName(eq(NAME)));
 	}
 
 }
