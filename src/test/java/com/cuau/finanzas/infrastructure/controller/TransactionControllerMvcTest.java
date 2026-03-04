@@ -4,10 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.cuau.finanzas.domain.enums.CreditType;
 import com.cuau.finanzas.domain.enums.CronologyType;
 import com.cuau.finanzas.domain.enums.DebitType;
+import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.CreditTransaction;
 import com.cuau.finanzas.domain.model.DebitTransaction;
 import com.cuau.finanzas.domain.model.Transaction;
@@ -135,6 +138,41 @@ public class TransactionControllerMvcTest {
 				.andExpect(status().isBadRequest());
 
 		validateVerifies(0);
+	}
+
+	@Test
+	void shouldGetCreditTransactionById() throws Exception {
+		when(service.getTransaction(anyLong())).thenReturn(new CreditTransaction());
+		when(mapper.dtoFrom(any(Transaction.class))).thenReturn(buildCreditDto(1L, CronologyType.ACTUAL, 1, 1));
+
+		mvc.perform(get("/transaction/{id}", "1").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(1)).andExpect(jsonPath("$.name").value("Credit test"))
+				.andExpect(jsonPath("$.amount").value(1)).andExpect(jsonPath("$.cronologyType").value("ACTUAL"))
+				.andExpect(jsonPath("$.date").value("2026-03-02")).andExpect(jsonPath("$.creditType").value("EXPENSE"))
+				.andExpect(jsonPath("$.numberActualPayment").value(1)).andExpect(jsonPath("$.totalPayments").value(1))
+				.andExpect(jsonPath("$.type").value("CREDIT"))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@Test
+	void shouldGetDebitTransactionById() throws Exception {
+		when(service.getTransaction(anyLong())).thenReturn(new DebitTransaction());
+		when(mapper.dtoFrom(any(Transaction.class))).thenReturn(buildDebitDto(1L, CronologyType.ACTUAL));
+
+		mvc.perform(get("/transaction/{id}", "1").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(1)).andExpect(jsonPath("$.name").value("Debit Test"))
+				.andExpect(jsonPath("$.amount").value(1)).andExpect(jsonPath("$.cronologyType").value("ACTUAL"))
+				.andExpect(jsonPath("$.date").value("2026-03-02")).andExpect(jsonPath("$.debitType").value("INCOME"))
+				.andExpect(jsonPath("$.type").value("DEBIT"))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@Test
+	void shouldReturnNotFoundWhenIdIsNotValid() throws Exception {
+		when(service.getTransaction(anyLong())).thenThrow(new ResourceNotFoundException("transaction", "id", "1"));
+
+		mvc.perform(get("/transaction/{id}", "1").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isNotFound());
 	}
 
 	private void validateVerifies(int times) {
