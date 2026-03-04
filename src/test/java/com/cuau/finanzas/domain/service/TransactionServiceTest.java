@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.CreditTransaction;
 import com.cuau.finanzas.domain.model.DebitTransaction;
 import com.cuau.finanzas.domain.model.Transaction;
@@ -110,6 +113,23 @@ public class TransactionServiceTest {
 				() -> assertEquals(2, transactionsSaved.size()),
 				() -> verify(rules, times(2)).generateBalances(any(Transaction.class)),
 				() -> verify(concurrentValueService, times(2)).incrementAmount(any(BalanceUpdate.class)));
+	}
+
+	@ParameterizedTest
+	@MethodSource("transactionInstances")
+	void shouldReturnTransactionWhenIdIsAValidParam(Transaction transaction) {
+		when(repository.findById(anyLong())).thenReturn(Optional.of(transaction));
+
+		Transaction transactionFetched = assertDoesNotThrow(() -> service.getTransaction(1L));
+
+		assertNotNull(transactionFetched);
+	}
+
+	@Test
+	void shouldPropagateExceptionWhenIsNotFoundSource() {
+		when(repository.findById(anyLong())).thenReturn(Optional.empty());
+
+		assertThrows(ResourceNotFoundException.class, () -> service.getTransaction(1L));
 	}
 
 	private static Stream<Transaction> transactionInstances() {
