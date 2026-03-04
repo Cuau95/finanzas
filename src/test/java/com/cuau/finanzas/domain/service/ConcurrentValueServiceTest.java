@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.ConcurrentValue;
 import com.cuau.finanzas.domain.repository.ConcurrentValueRepository;
 import com.cuau.finanzas.domain.rules.pojo.BalanceUpdate;
@@ -116,10 +117,9 @@ public class ConcurrentValueServiceTest {
 
 	@Test
 	void shouldPropagateExceptionWhenRepositoryThrows() {
-		when(repository.findByName(eq(NAME)))
-				.thenThrow(new IllegalArgumentException("this test had failed by a funny argument"));
+		when(repository.findByName(eq(NAME))).thenReturn(Optional.empty());
 
-		assertAll(() -> assertThrows(IllegalArgumentException.class, () -> service.getConcurrentValue(NAME)),
+		assertAll(() -> assertThrows(ResourceNotFoundException.class, () -> service.getConcurrentValue(NAME)),
 				() -> verify(repository).findByName(eq(NAME)));
 	}
 
