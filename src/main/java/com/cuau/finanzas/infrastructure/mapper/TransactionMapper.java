@@ -15,14 +15,14 @@ import com.cuau.finanzas.infrastructure.dto.TransactionDto;
 
 @Component
 public class TransactionMapper {
-	
+
 	// Method to generate response from transaction model in list
-	public List<TransactionDto> dtoFrom(List<Transaction> transactions) {
+	public List<TransactionDto> dtoFrom(List<? extends Transaction> transactions) {
 		return transactions.stream().map(this::dtoFrom).toList();
 	}
-	
+
 	// Method to generate model from dto in list
-	public List<Transaction> modelFrom(List<TransactionDto> dtos) {
+	public List<Transaction> modelFrom(List<? extends TransactionDto> dtos) {
 		return dtos.stream().map(this::modelFrom).toList();
 	}
 
@@ -36,10 +36,11 @@ public class TransactionMapper {
 		} else if (transaction instanceof DebitTransaction debit) {
 			return debitMapper(debit);
 		} else {
-			throw new UnsupportedOperationException( "No mapper defined for transaction type" + transaction.getClass().getName());
+			throw new UnsupportedOperationException(
+					"No mapper defined for transaction type" + transaction.getClass().getName());
 		}
 	}
-	
+
 	// Method to generate model from dto
 	public Transaction modelFrom(TransactionDto dto) {
 		if (isNull(dto)) {
@@ -50,27 +51,28 @@ public class TransactionMapper {
 		} else if (dto instanceof DebitTransactionDto deditDto) {
 			return debitMapper(deditDto);
 		} else {
-			throw new UnsupportedOperationException( "No mapper defined for transaction type" + dto.getClass().getName());
+			throw new UnsupportedOperationException(
+					"No mapper defined for transaction type" + dto.getClass().getName());
 		}
 	}
-	
+
 	private CreditTransaction creditMapper(CreditTransactionDto creditDto) {
 		CreditTransaction transaction = new CreditTransaction();
-		
+
 		mapCommonFieldsToModel(transaction, creditDto);
-		
+
 		transaction.setCreditType(creditDto.getCreditType());
 		transaction.setInterest(creditDto.getInterest());
 		transaction.setNumberActualPayment(creditDto.getNumberActualPayment());
 		transaction.setTotalPayments(creditDto.getTotalPayments());
 		return transaction;
 	}
-	
+
 	private DebitTransaction debitMapper(DebitTransactionDto creditDto) {
 		DebitTransaction transaction = new DebitTransaction();
-		
+
 		mapCommonFieldsToModel(transaction, creditDto);
-		
+
 		transaction.setDebitType(creditDto.getDebitType());
 		return transaction;
 	}
@@ -103,7 +105,7 @@ public class TransactionMapper {
 		target.setDate(source.getDate());
 		target.setName(source.getName());
 	}
-	
+
 	private void mapCommonFieldsToModel(Transaction source, TransactionDto target) {
 		source.setAmount(target.getAmount());
 		source.setCronologyType(target.getCronologyType());

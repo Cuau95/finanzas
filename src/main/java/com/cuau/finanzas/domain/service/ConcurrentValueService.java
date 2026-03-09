@@ -1,5 +1,8 @@
 package com.cuau.finanzas.domain.service;
 
+import static com.cuau.finanzas.domain.enums.ConcurrentValueName.CREDIT_BALANCE;
+import static com.cuau.finanzas.domain.enums.ConcurrentValueName.DEBIT_BALANCE;
+import static com.cuau.finanzas.domain.enums.ConcurrentValueName.TOTAL_SAVING_BUCKET;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.List;
@@ -23,6 +26,8 @@ public class ConcurrentValueService {
 	private static final Logger LOGGER = getLogger(ConcurrentValueService.class);
 	private static final String CONCURRENT_VALUE_RESOURCE_NAME = "ConcurrentValue";
 	private static final String NAME_FIELD_NAME = "name";
+	private static final List<String> MAIN_BALANCES_NAMES = List.of(CREDIT_BALANCE.getName(), DEBIT_BALANCE.getName(),
+			TOTAL_SAVING_BUCKET.getName());
 
 	private final ConcurrentValueRepository repository;
 
@@ -51,6 +56,11 @@ public class ConcurrentValueService {
 	public ConcurrentValue getConcurrentValue(String name) {
 		return repository.findByName(name).orElseThrow(
 				() -> new ResourceNotFoundException(CONCURRENT_VALUE_RESOURCE_NAME, NAME_FIELD_NAME, name));
+	}
+
+	@Transactional(readOnly = true)
+	public List<ConcurrentValue> getMainlyBalances() {
+		return repository.findByNameIn(MAIN_BALANCES_NAMES);
 	}
 
 }

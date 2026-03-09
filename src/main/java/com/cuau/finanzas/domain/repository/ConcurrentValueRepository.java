@@ -1,6 +1,7 @@
 package com.cuau.finanzas.domain.repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,5 +20,7 @@ public interface ConcurrentValueRepository extends JpaRepository<ConcurrentValue
 	int incrementAmount(@Param("name") String name, @Param("amount") BigDecimal amount);
 
 	Optional<ConcurrentValue> findByName(String name);
+
+	List<ConcurrentValue> findByNameIn(List<String> names);
 
 }
