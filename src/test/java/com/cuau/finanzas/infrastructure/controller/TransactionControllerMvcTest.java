@@ -50,6 +50,8 @@ import tools.jackson.databind.ObjectMapper;
 @WebMvcTest(value = TransactionController.class)
 public class TransactionControllerMvcTest {
 
+	private static final String SOURCE_PATH = "/transactions";
+
 	@Autowired
 	private MockMvc mvc;
 	@Autowired
@@ -68,7 +70,7 @@ public class TransactionControllerMvcTest {
 
 		String json = objectMapper.writeValueAsString(buildCreditDto(null, CronologyType.ACTUAL, 1, 1));
 
-		mvc.perform(post("/transaction").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(1))
 				.andExpect(jsonPath("$.name").value("Credit test")).andExpect(jsonPath("$.amount").value(1))
 				.andExpect(jsonPath("$.cronologyType").value("ACTUAL"))
@@ -88,7 +90,7 @@ public class TransactionControllerMvcTest {
 
 		String json = objectMapper.writeValueAsString(buildDebitDto(null, CronologyType.ACTUAL));
 
-		mvc.perform(post("/transaction").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(1))
 				.andExpect(jsonPath("$.name").value("Debit Test")).andExpect(jsonPath("$.amount").value(1))
 				.andExpect(jsonPath("$.cronologyType").value("ACTUAL"))
@@ -109,7 +111,7 @@ public class TransactionControllerMvcTest {
 		String json = objectMapper.writerFor(new TypeReference<List<TransactionDto>>() {
 		}).writeValueAsString(dtos);
 
-		mvc.perform(post("/transaction/batch").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH + "/batch").contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.length()").value(dtos.size()));
 
@@ -123,7 +125,7 @@ public class TransactionControllerMvcTest {
 		CreditTransactionDto dto = buildCreditDto(1L, CronologyType.ACTUAL, numberActual, total);
 		String json = objectMapper.writeValueAsString(dto);
 
-		mvc.perform(post("/transaction").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isBadRequest());
 
 		validateVerifies(0);
@@ -134,7 +136,7 @@ public class TransactionControllerMvcTest {
 	void shouldReturnBadRequestWhenCronologyTypeIsNotActual(TransactionDto dto) throws Exception {
 		String json = objectMapper.writeValueAsString(dto);
 
-		mvc.perform(post("/transaction").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isBadRequest());
 
 		validateVerifies(0);
@@ -145,7 +147,7 @@ public class TransactionControllerMvcTest {
 		when(service.getTransaction(anyLong())).thenReturn(new CreditTransaction());
 		when(mapper.dtoFrom(any(Transaction.class))).thenReturn(buildCreditDto(1L, CronologyType.ACTUAL, 1, 1));
 
-		mvc.perform(get("/transaction/{id}", "1").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+		mvc.perform(get(SOURCE_PATH + "/{id}", "1").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(1)).andExpect(jsonPath("$.name").value("Credit test"))
 				.andExpect(jsonPath("$.amount").value(1)).andExpect(jsonPath("$.cronologyType").value("ACTUAL"))
 				.andExpect(jsonPath("$.date").value("2026-03-02")).andExpect(jsonPath("$.creditType").value("EXPENSE"))
@@ -159,7 +161,7 @@ public class TransactionControllerMvcTest {
 		when(service.getTransaction(anyLong())).thenReturn(new DebitTransaction());
 		when(mapper.dtoFrom(any(Transaction.class))).thenReturn(buildDebitDto(1L, CronologyType.ACTUAL));
 
-		mvc.perform(get("/transaction/{id}", "1").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+		mvc.perform(get(SOURCE_PATH + "/{id}", "1").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(1)).andExpect(jsonPath("$.name").value("Debit Test"))
 				.andExpect(jsonPath("$.amount").value(1)).andExpect(jsonPath("$.cronologyType").value("ACTUAL"))
 				.andExpect(jsonPath("$.date").value("2026-03-02")).andExpect(jsonPath("$.debitType").value("INCOME"))
@@ -171,7 +173,7 @@ public class TransactionControllerMvcTest {
 	void shouldReturnNotFoundWhenIdIsNotValid() throws Exception {
 		when(service.getTransaction(anyLong())).thenThrow(new ResourceNotFoundException("transaction", "id", "1"));
 
-		mvc.perform(get("/transaction/{id}", "1").contentType(MediaType.APPLICATION_JSON))
+		mvc.perform(get(SOURCE_PATH + "/{id}", "1").contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound());
 	}
 
