@@ -8,11 +8,14 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+
+import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -86,6 +89,17 @@ public class GlobalExceptionHandler {
 		problem.setProperty("path", request.getDescription(false));
 
 		return problem;
+	}
+	
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
+	    ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+	    problem.setTitle("Resource Not Found");
+	    problem.setDetail(ex.getMessage());
+	    problem.setProperty("resource", ex.getResourceName());
+	    problem.setProperty("field", ex.getFieldName());
+	    problem.setProperty("value", ex.getFieldValue());
+	    return problem;
 	}
 
 }

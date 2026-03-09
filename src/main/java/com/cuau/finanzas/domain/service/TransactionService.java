@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.Transaction;
 import com.cuau.finanzas.domain.repository.TransactionRepository;
 import com.cuau.finanzas.domain.rules.TransactionBusinessRules;
@@ -21,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 public class TransactionService {
 
 	private static final Logger LOGGER = getLogger(TransactionService.class);
+
+	private static final String TRANSACTION_RESOURCE_NAME = "Transaction";
+	private static final String ID_FIELD_NAME = "id";
 
 	private final TransactionRepository repository;
 	private final ConcurrentValueService concurrentValueService;
@@ -41,6 +45,12 @@ public class TransactionService {
 		});
 
 		return transactionsSaved;
+	}
+
+	@Transactional(readOnly = true)
+	public Transaction getTransaction(Long id) {
+		return repository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException(TRANSACTION_RESOURCE_NAME, ID_FIELD_NAME, id));
 	}
 
 	private void incrementBalance(Transaction transactionSaved) {

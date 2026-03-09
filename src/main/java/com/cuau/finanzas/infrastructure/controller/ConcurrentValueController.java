@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +49,12 @@ public class ConcurrentValueController {
 		LOGGER.info("List of Concurrent Values to save request received");
 		List<ConcurrentValue> valuesSaved = service.saveConcurrentValues(mapper.toModel(body));
 		return ResponseEntity.status(CREATED).body(mapper.toResponse(valuesSaved));
+	}
+
+	@GetMapping("/{name}")
+	public ResponseEntity<ConcurrentValueResponse> getConcurrentValue(@PathVariable String name) {
+		LOGGER.info("Request to get Concurrent Value with this name: {}", name);
+		return ResponseEntity.ok(mapper.toResponse(service.getConcurrentValue(name)));
 	}
 
 }
