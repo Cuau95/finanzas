@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -122,6 +123,28 @@ public class ConcurrentValueControllerMvcTest {
 
 		assertAll(() -> verify(service).getConcurrentValue(eq(TEST_NAME)),
 				() -> verify(mapper, times(0)).toResponse(any(ConcurrentValue.class)));
+	}
+
+	@Test
+	void shouldReturnMainlyBalancesValues() throws Exception {
+		when(service.getMainlyBalances()).thenReturn(
+				Arrays.asList(new ConcurrentValue(1L, TEST_NAME, BigDecimal.ONE, LocalDateTime.of(2026, 3, 3, 2, 56))));
+
+		mvc.perform(get(SOURCE_PATH + "/mainlybalances").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.length()").value(1));
+
+		assertAll(() -> verify(service).getMainlyBalances(), () -> verify(mapper).toResponse(anyList()));
+	}
+
+	@Test
+	void shouldReturnBadRequestWhenMainlyBalancesQueryFaild() throws Exception {
+		when(service.getMainlyBalances()).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		mvc.perform(get(SOURCE_PATH + "/mainlybalances").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isInternalServerError());
+
+		assertAll(() -> verify(service).getMainlyBalances());
 	}
 
 	private void validateVerifies(int times) {
