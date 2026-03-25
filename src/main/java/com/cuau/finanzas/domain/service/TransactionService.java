@@ -71,7 +71,7 @@ public class TransactionService {
 	}
 	
 	@Transactional(readOnly = true)
-	public List<DebitTransaction> getLatestDebitTransaction() {
+	public List<DebitTransaction> getLatestDebitTransactions() {
 		return debitRepo.findTop5ByOrderByDateDesc();
 	}
 

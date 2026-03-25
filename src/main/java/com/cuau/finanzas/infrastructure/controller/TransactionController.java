@@ -67,7 +67,7 @@ public class TransactionController {
 	@GetMapping("/debit/latest")
 	public ResponseEntity<List<TransactionDto>> getLastestDebitTransactions() {
 		LOGGER.info("Request reveived to get 5 lastest debit transactions created");
-		return ResponseEntity.ok(mapper.dtoFrom(service.getLatestDebitTransaction()));
+		return ResponseEntity.ok(mapper.dtoFrom(service.getLatestDebitTransactions()));
 	}
 
 }
