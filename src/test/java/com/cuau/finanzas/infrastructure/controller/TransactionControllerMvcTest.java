@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -79,7 +80,7 @@ public class TransactionControllerMvcTest {
 				.andExpect(jsonPath("$.type").value("CREDIT"))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
-		validateVerifies(1);
+		validateVerifiesCreateTransactionProcess(1);
 	}
 
 	@Test
@@ -98,7 +99,7 @@ public class TransactionControllerMvcTest {
 				.andExpect(jsonPath("$.type").value("DEBIT"))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
-		validateVerifies(1);
+		validateVerifiesCreateTransactionProcess(1);
 	}
 
 	@Test
@@ -128,7 +129,7 @@ public class TransactionControllerMvcTest {
 		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isBadRequest());
 
-		validateVerifies(0);
+		validateVerifiesCreateTransactionProcess(0);
 	}
 
 	@ParameterizedTest
@@ -139,7 +140,7 @@ public class TransactionControllerMvcTest {
 		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isBadRequest());
 
-		validateVerifies(0);
+		validateVerifiesCreateTransactionProcess(0);
 	}
 
 	@Test
@@ -177,7 +178,74 @@ public class TransactionControllerMvcTest {
 				.andExpect(status().isNotFound());
 	}
 
-	private void validateVerifies(int times) {
+	@Test
+	void shouldReturnLatestTransactions() throws Exception {
+		List<TransactionDto> dtos = createTransactionDtoList();
+		when(service.getLatestTransactions()).thenReturn(new ArrayList<Transaction>());
+		when(mapper.dtoFrom(anyList())).thenReturn(dtos);
+
+		mvc.perform(get(SOURCE_PATH + "/latest").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.length()").value(dtos.size()));
+	}
+
+	@Test
+	void shouldReturnInternalServerErrorStatusWhenGetLatestTransactionsThrowsDataAccessException() throws Exception {
+		when(service.getLatestTransactions()).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		mvc.perform(get(SOURCE_PATH + "/latest").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isInternalServerError());
+
+		verify(mapper, times(0)).dtoFrom(anyList());
+	}
+
+	@Test
+	void shouldReturnLatestCreditTransactions() throws Exception {
+		List<TransactionDto> creditDtos = new ArrayList<>();
+		creditDtos.add(buildCreditDto(1L, CronologyType.ACTUAL, null, null));
+		when(service.getLatestCreditTransactions()).thenReturn(new ArrayList<CreditTransaction>());
+		when(mapper.dtoFrom(anyList())).thenReturn(creditDtos);
+
+		mvc.perform(get(SOURCE_PATH + "/credit/latest").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.length()").value(creditDtos.size()));
+	}
+
+	@Test
+	void shouldReturnInternalServerErrorStatusWhenGetLatestCreditTransactionsThrowsDataAccessException()
+			throws Exception {
+		when(service.getLatestCreditTransactions()).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		mvc.perform(get(SOURCE_PATH + "/credit/latest").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isInternalServerError());
+
+		verify(mapper, times(0)).dtoFrom(anyList());
+	}
+
+	@Test
+	void shouldReturnLatestDebitTransactions() throws Exception {
+		List<TransactionDto> debitDtos = new ArrayList<>();
+		debitDtos.add(buildDebitDto(null, CronologyType.CALCULATED));
+		when(service.getLatestDebitTransactions()).thenReturn(new ArrayList<DebitTransaction>());
+		when(mapper.dtoFrom(anyList())).thenReturn(debitDtos);
+
+		mvc.perform(get(SOURCE_PATH + "/debit/latest").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.length()").value(debitDtos.size()));
+	}
+
+	@Test
+	void shouldReturnInternalServerErrorStatusWhenGetLatestDebitTransactionsThrowsDataAccessException()
+			throws Exception {
+		when(service.getLatestDebitTransactions()).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		mvc.perform(get(SOURCE_PATH + "/debit/latest").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isInternalServerError());
+
+		verify(mapper, times(0)).dtoFrom(anyList());
+	}
+
+	private void validateVerifiesCreateTransactionProcess(int times) {
 		assertAll(() -> verify(service, times(times)).saveTransaction(any(Transaction.class)),
 				() -> verify(mapper, times(times)).modelFrom(any(TransactionDto.class)),
 				() -> verify(mapper, times(times)).dtoFrom(any(Transaction.class)),
