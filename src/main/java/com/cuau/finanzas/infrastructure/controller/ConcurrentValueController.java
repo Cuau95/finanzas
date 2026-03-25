@@ -25,7 +25,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/concurrentvalue")
+@RequestMapping("/concurrentvalues")
 @RequiredArgsConstructor
 public class ConcurrentValueController {
 
@@ -39,7 +39,7 @@ public class ConcurrentValueController {
 			@RequestBody @Valid ConcurrentValueRequest body) {
 		LOGGER.info("Concurrent Value to save request received");
 		ConcurrentValue valueSaved = service.saveConcurrentValue(mapper.toModel(body));
-		return ResponseEntity.created(URI.create("/concurrentvalue/" + valueSaved.getId()))
+		return ResponseEntity.created(URI.create("/concurrentvalues/" + valueSaved.getId()))
 				.body(mapper.toResponse(valueSaved));
 	}
 
@@ -55,6 +55,12 @@ public class ConcurrentValueController {
 	public ResponseEntity<ConcurrentValueResponse> getConcurrentValue(@PathVariable String name) {
 		LOGGER.info("Request to get Concurrent Value with this name: {}", name);
 		return ResponseEntity.ok(mapper.toResponse(service.getConcurrentValue(name)));
+	}
+
+	@GetMapping("/mainlybalances")
+	public ResponseEntity<List<ConcurrentValueResponse>> getMainlyBalances() {
+		LOGGER.info("Request received to get mainly balances");
+		return ResponseEntity.ok(mapper.toResponse(service.getMainlyBalances()));
 	}
 
 }

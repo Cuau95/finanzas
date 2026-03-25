@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.MDC;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -90,16 +91,31 @@ public class GlobalExceptionHandler {
 
 		return problem;
 	}
-	
+
 	@ExceptionHandler(ResourceNotFoundException.class)
 	public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
-	    ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
-	    problem.setTitle("Resource Not Found");
-	    problem.setDetail(ex.getMessage());
-	    problem.setProperty("resource", ex.getResourceName());
-	    problem.setProperty("field", ex.getFieldName());
-	    problem.setProperty("value", ex.getFieldValue());
-	    return problem;
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+		problem.setTitle("Resource Not Found");
+		problem.setDetail(ex.getMessage());
+		problem.setProperty("resource", ex.getResourceName());
+		problem.setProperty("field", ex.getFieldName());
+		problem.setProperty("value", ex.getFieldValue());
+		return problem;
+	}
+
+	@ExceptionHandler(DataAccessException.class)
+	public ProblemDetail handleDatabaseException(DataAccessException ex, WebRequest request) {
+
+		LOGGER.error("ERROR en API - Database error", ex);
+		MDC.clear();
+
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+
+		problem.setTitle("Database error");
+		problem.setDetail("An error occurred while accessing the database");
+		problem.setProperty("path", request.getDescription(false));
+
+		return problem;
 	}
 
 }

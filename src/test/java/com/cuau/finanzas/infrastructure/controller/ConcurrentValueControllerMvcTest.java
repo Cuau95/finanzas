@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -43,6 +44,7 @@ import tools.jackson.databind.ObjectMapper;
 public class ConcurrentValueControllerMvcTest {
 
 	private final static String TEST_NAME = "Concurrent Value Test";
+	private final static String SOURCE_PATH = "/concurrentvalues";
 
 	@Autowired
 	private MockMvc mvc;
@@ -61,9 +63,9 @@ public class ConcurrentValueControllerMvcTest {
 
 		String json = objectMapper.writeValueAsString(new ConcurrentValueRequest(TEST_NAME, BigDecimal.ONE));
 
-		mvc.perform(post("/concurrentvalue").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
-				.andExpect(redirectedUrl("/concurrentvalue/1")).andExpect(jsonPath("$.id").value(1))
+				.andExpect(redirectedUrl(SOURCE_PATH + "/1")).andExpect(jsonPath("$.id").value(1))
 				.andExpect(jsonPath("$.name").value(TEST_NAME)).andExpect(jsonPath("$.amount").value(1))
 				.andExpect(jsonPath("$.lastUpdateDate").value("2026-03-03T02:56:00"));
 
@@ -77,7 +79,7 @@ public class ConcurrentValueControllerMvcTest {
 		String json = objectMapper
 				.writeValueAsString(Arrays.asList(new ConcurrentValueRequest(TEST_NAME, BigDecimal.ONE)));
 
-		mvc.perform(post("/concurrentvalue/batch").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH + "/batch").contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.length()").value(1));
 
@@ -90,7 +92,7 @@ public class ConcurrentValueControllerMvcTest {
 	void shouldReturnBadRequestWhenIsAnInvalidRequest(String name, BigDecimal amount) throws Exception {
 		String json = objectMapper.writeValueAsString(new ConcurrentValueRequest(name, amount));
 
-		mvc.perform(post("/concurrentvalue").contentType(MediaType.APPLICATION_JSON).content(json))
+		mvc.perform(post(SOURCE_PATH).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isBadRequest());
 
 		validateVerifies(0);
@@ -101,7 +103,7 @@ public class ConcurrentValueControllerMvcTest {
 		when(service.getConcurrentValue(eq(TEST_NAME)))
 				.thenReturn(new ConcurrentValue(1L, TEST_NAME, BigDecimal.ONE, LocalDateTime.of(2026, 3, 3, 2, 56)));
 
-		mvc.perform(get("/concurrentvalue/{name}", TEST_NAME).contentType(MediaType.APPLICATION_JSON))
+		mvc.perform(get(SOURCE_PATH + "/{name}", TEST_NAME).contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.id").value(1)).andExpect(jsonPath("$.name").value(TEST_NAME))
 				.andExpect(jsonPath("$.amount").value(1))
@@ -116,11 +118,33 @@ public class ConcurrentValueControllerMvcTest {
 		when(service.getConcurrentValue(eq(TEST_NAME)))
 				.thenThrow(new ResourceNotFoundException("test", "test", TEST_NAME));
 
-		mvc.perform(get("/concurrentvalue/{name}", TEST_NAME).contentType(MediaType.APPLICATION_JSON))
+		mvc.perform(get(SOURCE_PATH + "/{name}", TEST_NAME).contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound());
 
 		assertAll(() -> verify(service).getConcurrentValue(eq(TEST_NAME)),
 				() -> verify(mapper, times(0)).toResponse(any(ConcurrentValue.class)));
+	}
+
+	@Test
+	void shouldReturnMainlyBalancesValues() throws Exception {
+		when(service.getMainlyBalances()).thenReturn(
+				Arrays.asList(new ConcurrentValue(1L, TEST_NAME, BigDecimal.ONE, LocalDateTime.of(2026, 3, 3, 2, 56))));
+
+		mvc.perform(get(SOURCE_PATH + "/mainlybalances").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$.length()").value(1));
+
+		assertAll(() -> verify(service).getMainlyBalances(), () -> verify(mapper).toResponse(anyList()));
+	}
+
+	@Test
+	void shouldReturnBadRequestWhenMainlyBalancesQueryFaild() throws Exception {
+		when(service.getMainlyBalances()).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		mvc.perform(get(SOURCE_PATH + "/mainlybalances").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isInternalServerError());
+
+		assertAll(() -> verify(service).getMainlyBalances());
 	}
 
 	private void validateVerifies(int times) {

@@ -2,12 +2,14 @@ package com.cuau.finanzas.domain.service;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.ConcurrentValue;
@@ -116,11 +119,29 @@ public class ConcurrentValueServiceTest {
 	}
 
 	@Test
-	void shouldPropagateExceptionWhenRepositoryThrows() {
+	void shouldPropagateExceptionWhenRepositoryThrowsInFindByNameCase() {
 		when(repository.findByName(eq(NAME))).thenReturn(Optional.empty());
 
 		assertAll(() -> assertThrows(ResourceNotFoundException.class, () -> service.getConcurrentValue(NAME)),
 				() -> verify(repository).findByName(eq(NAME)));
+	}
+
+	@Test
+	void shouldReturnListConcurrentValuesWithNamesInParams() {
+		when(repository.findByNameIn(anyList())).thenReturn(values);
+
+		List<ConcurrentValue> valuesFetched = assertDoesNotThrow(() -> service.getMainlyBalances());
+
+		assertAll(() -> assertNotNull(valuesFetched), () -> assertEquals(1, valuesFetched.size()),
+				() -> verify(repository).findByNameIn(anyList()));
+	}
+
+	@Test
+	void shoulsPropagateExceptionWhenRepositoryThrowsInFindByNameInCase() {
+		when(repository.findByNameIn(anyList())).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		assertAll(() -> assertThrows(DataAccessResourceFailureException.class, () -> service.getMainlyBalances()),
+				() -> verify(repository).findByNameIn(anyList()));
 	}
 
 }

@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController()
-@RequestMapping("/transaction")
+@RequestMapping("/transactions")
 @RequiredArgsConstructor
 public class TransactionController {
 
@@ -50,6 +50,24 @@ public class TransactionController {
 	public ResponseEntity<TransactionDto> getTransaction(@PathVariable Long id) {
 		LOGGER.info("Request received to get Transaction with this ID: {}", id);
 		return ResponseEntity.ok(mapper.dtoFrom(service.getTransaction(id)));
+	}
+
+	@GetMapping("/latest")
+	public ResponseEntity<List<TransactionDto>> getLastest() {
+		LOGGER.info("Request reveived to get 10 lastest transactions created");
+		return ResponseEntity.ok(mapper.dtoFrom(service.getLatestTransactions()));
+	}
+	
+	@GetMapping("/credit/latest")
+	public ResponseEntity<List<TransactionDto>> getLastestCreditTransactions() {
+		LOGGER.info("Request reveived to get 5 lastest credit transactions created");
+		return ResponseEntity.ok(mapper.dtoFrom(service.getLatestCreditTransactions()));
+	}
+	
+	@GetMapping("/debit/latest")
+	public ResponseEntity<List<TransactionDto>> getLastestDebitTransactions() {
+		LOGGER.info("Request reveived to get 5 lastest debit transactions created");
+		return ResponseEntity.ok(mapper.dtoFrom(service.getLatestDebitTransactions()));
 	}
 
 }

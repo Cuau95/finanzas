@@ -32,11 +32,14 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 import com.cuau.finanzas.domain.exception.ResourceNotFoundException;
 import com.cuau.finanzas.domain.model.CreditTransaction;
 import com.cuau.finanzas.domain.model.DebitTransaction;
 import com.cuau.finanzas.domain.model.Transaction;
+import com.cuau.finanzas.domain.repository.CreditTransactionRepository;
+import com.cuau.finanzas.domain.repository.DebitTransactionRepository;
 import com.cuau.finanzas.domain.repository.TransactionRepository;
 import com.cuau.finanzas.domain.rules.TransactionBusinessRules;
 import com.cuau.finanzas.domain.rules.pojo.BalanceUpdate;
@@ -51,6 +54,10 @@ public class TransactionServiceTest {
 
 	@Mock
 	private TransactionRepository repository;
+	@Mock
+	private CreditTransactionRepository creditRepo;
+	@Mock
+	private DebitTransactionRepository debitRepo;
 	@Mock
 	private ConcurrentValueService concurrentValueService;
 	@Mock
@@ -130,6 +137,67 @@ public class TransactionServiceTest {
 		when(repository.findById(anyLong())).thenReturn(Optional.empty());
 
 		assertThrows(ResourceNotFoundException.class, () -> service.getTransaction(1L));
+	}
+
+	@Test
+	void shouldReturnLatestTop10Transactions() {
+		when(repository.findTop10ByOrderByDateDesc())
+				.thenReturn(List.of(new CreditTransaction(), new DebitTransaction()));
+
+		List<Transaction> latestTransactions = assertDoesNotThrow(() -> service.getLatestTransactions());
+
+		assertAll(() -> assertNotNull(latestTransactions), () -> assertEquals(2, latestTransactions.size()),
+				() -> verify(repository).findTop10ByOrderByDateDesc());
+	}
+
+	@Test
+	void shouldPropagateExceptionWhenFindTop10TransactionsThrows() {
+		when(repository.findTop10ByOrderByDateDesc())
+				.thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		assertAll(() -> assertThrows(DataAccessResourceFailureException.class, () -> service.getLatestTransactions()),
+				() -> verify(repository).findTop10ByOrderByDateDesc());
+	}
+
+	@Test
+	void shouldReturnLatestTop5CreditTransactions() {
+		when(creditRepo.findTop5ByOrderByDateDesc()).thenReturn(List.of(new CreditTransaction()));
+
+		List<CreditTransaction> latestCreditTransactions = assertDoesNotThrow(
+				() -> service.getLatestCreditTransactions());
+
+		assertAll(() -> assertNotNull(latestCreditTransactions), () -> assertEquals(1, latestCreditTransactions.size()),
+				() -> verify(creditRepo).findTop5ByOrderByDateDesc());
+	}
+
+	@Test
+	void shouldPropagateExceptionWhenFindTop5CreditTransactionsThrows() {
+		when(creditRepo.findTop5ByOrderByDateDesc())
+				.thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		assertAll(
+				() -> assertThrows(DataAccessResourceFailureException.class,
+						() -> service.getLatestCreditTransactions()),
+				() -> verify(creditRepo).findTop5ByOrderByDateDesc());
+	}
+
+	@Test
+	void shouldReturnLatestTop5DebitTransactions() {
+		when(debitRepo.findTop5ByOrderByDateDesc()).thenReturn(List.of(new DebitTransaction()));
+
+		List<DebitTransaction> latestDebitTransactions = assertDoesNotThrow(() -> service.getLatestDebitTransactions());
+
+		assertAll(() -> assertNotNull(latestDebitTransactions), () -> assertEquals(1, latestDebitTransactions.size()),
+				() -> verify(debitRepo).findTop5ByOrderByDateDesc());
+	}
+
+	@Test
+	void shouldPropagateExceptionWhenFindTop5DebitTransactionsThrows() {
+		when(debitRepo.findTop5ByOrderByDateDesc()).thenThrow(new DataAccessResourceFailureException("DB unavailable"));
+
+		assertAll(
+				() -> assertThrows(DataAccessResourceFailureException.class, () -> service.getLatestDebitTransactions()),
+				() -> verify(debitRepo).findTop5ByOrderByDateDesc());
 	}
 
 	private static Stream<Transaction> transactionInstances() {
