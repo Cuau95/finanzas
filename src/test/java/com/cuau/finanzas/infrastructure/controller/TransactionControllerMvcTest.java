@@ -201,8 +201,7 @@ public class TransactionControllerMvcTest {
 
 	@Test
 	void shouldReturnLatestCreditTransactions() throws Exception {
-		List<TransactionDto> creditDtos = new ArrayList<>();
-		creditDtos.add(buildCreditDto(1L, CronologyType.ACTUAL, null, null));
+		List<TransactionDto> creditDtos = List.of(buildCreditDto(1L, CronologyType.ACTUAL, null, null));
 		when(service.getLatestCreditTransactions()).thenReturn(new ArrayList<CreditTransaction>());
 		when(mapper.dtoFrom(anyList())).thenReturn(creditDtos);
 
@@ -224,8 +223,7 @@ public class TransactionControllerMvcTest {
 
 	@Test
 	void shouldReturnLatestDebitTransactions() throws Exception {
-		List<TransactionDto> debitDtos = new ArrayList<>();
-		debitDtos.add(buildDebitDto(null, CronologyType.CALCULATED));
+		List<TransactionDto> debitDtos = List.of(buildDebitDto(null, CronologyType.CALCULATED));
 		when(service.getLatestDebitTransactions()).thenReturn(new ArrayList<DebitTransaction>());
 		when(mapper.dtoFrom(anyList())).thenReturn(debitDtos);
 
